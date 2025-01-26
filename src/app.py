@@ -6,6 +6,7 @@ import streamlit as st
 # from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from chatbot import execute as execute_chatbot
+from utils import limpiar_memoria_conversacion_previa, inicializar_base_conocimiento_vectorizada
 import os
 
 
@@ -19,16 +20,17 @@ st.title("Chatbot con LangChain")
 st.write("¡Hola! Soy tu chatbot, ¿en qué te puedo ayudar?")
 
 
-# Crear una lista para almacenar los mensajes de la conversación
+# Preparamos una lista para almacenar los mensajes de la conversación
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    if os.path.exists('storage/memory.pkl'):
-        os.remove('storage/memory.pkl')
+    limpiar_memoria_conversacion_previa()
 
 
 st.sidebar.title("Configuración")
 
-st.sidebar.text_input("Instrucciones", key="system_message", placeholder="Eres un asistente de inteligencia artificial enfocado a responder a las cuestiones del usuario.")
+st.sidebar.text_input("Instrucciones / Personalidad", key="system_message",
+                      help="Indicar instrucciones del comportamiento del chatbot.",
+                      placeholder="Eres un asistente de inteligencia artificial enfocado a responder a las cuestiones del usuario.")
 
 # Add a slider to the sidebar:
 add_slider = st.sidebar.slider(
@@ -37,6 +39,13 @@ add_slider = st.sidebar.slider(
     step=0.1,
     key="temperature"
 )
+
+st.sidebar.checkbox("Base de conocimiento", value=False, key="checkbox_base_conocimiento",
+                    help="Marcar solo para consultas en la base de conocimiento sobre la historia de España.")
+
+if st.session_state["checkbox_base_conocimiento"]:
+    with st.spinner("Generando base de conocimiento..."):
+        inicializar_base_conocimiento_vectorizada()
 
 # Mostrar mensajes previos
 for message in st.session_state.messages:
@@ -47,21 +56,21 @@ for message in st.session_state.messages:
 if "text_input" not in st.session_state:
     st.session_state.text_input = ""
 
+
 # Función para limpiar el campo de texto
-def limpiar_campo():
-    # st.session_state.text_input = ""  # Restablece el valor a vacío
+def limpiar_entrada_texto_usuario():
     st.session_state["user_input"] = ""
 
 
 # Función para añadir mensaje al historial de conversación
-def add_message():
+def enviar_entrada_texto_usuario():
     message = st.session_state["user_input"]
     st.session_state.messages.append(f'<div style="background-color:#c0e8ff;padding:5pt;width: 75%;margin-left: 25%;">{message}</div>')
-    limpiar_campo()
+    limpiar_entrada_texto_usuario()
     # Obtener la respuesta del chatbot
-    chatbot_response = execute_chatbot(message, st.session_state.system_message, st.session_state.temperature)
+    chatbot_response = execute_chatbot(message, st.session_state.system_message, st.session_state.temperature, st.session_state.checkbox_base_conocimiento)
     st.session_state.messages.append(f'<div style="padding:5pt;width: 75%;">{chatbot_response}</div>')
-    # st.write(chatbot_response)
 
 # Interfaz de usuario
-st.text_input("", value=st.session_state.text_input, on_change=add_message, key="user_input", placeholder="Escribe tu mensaje")
+st.text_input("Escribe tu mensaje", value=st.session_state.text_input, on_change=enviar_entrada_texto_usuario, key="user_input",
+              placeholder="Escribe tu mensaje", label_visibility='hidden')

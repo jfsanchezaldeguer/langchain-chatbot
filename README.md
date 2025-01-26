@@ -14,3 +14,9 @@ Hay dos formas de ejecución: mediante contenedores Docker, o mediante ejecució
     Network URL: http://172.17.0.2:8501
 
 ## Documentación de configuración
+
+
+## Documentación de uso
+
+
+## Explicación de decisiones de diseño

@@ -1,5 +1,4 @@
 from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory, ConversationBufferWindowMemory
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.prompts import (
     ChatPromptTemplate,
@@ -7,13 +6,15 @@ from langchain.prompts import (
     SystemMessagePromptTemplate,
     MessagesPlaceholder
 )
-import pickle
-from langchain.agents import load_tools,initialize_agent,AgentType,create_react_agent,AgentExecutor,Tool
-# from langchain_community.llms import HuggingFaceHub
-# from langchain_community.chat_models.huggingface import ChatHuggingFace
+from langchain.agents import load_tools,initialize_agent,AgentType,create_react_agent,AgentExecutor,tool,Tool
+from langchain.memory import ConversationBufferMemory
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
-from huggingface_hub import login
+# from huggingface_hub import login
 from huggingface_hub.utils import HfHubHTTPError
+from langchain_huggingface import HuggingFaceEmbeddings
+from utils import (persistir_memoria_conversacion, cargar_memoria_conversacion, obtener_tools_consulta_base_conocimiento,
+                   SYSTEM_PROMPT, CONVERSATION_HISTORY_PROMPT)
+from pydantic import ValidationError
 
 from dotenv import load_dotenv
 import os
@@ -23,12 +24,7 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 # login(token=os.environ["HUGGINGFACEHUB_API_TOKEN"])
 
 
-def huggingface_chatbot_response(user_input: str, custom_prompt: str, temperature: float):
-    if os.path.exists('storage/memory.pkl'):
-        memoria_cargada = open('storage/memory.pkl', 'rb').read()  # rb para indicar que leemos el objeto binario
-        memory = pickle.loads(memoria_cargada)
-    else:
-        memory = ConversationBufferWindowMemory(return_messages=True, k=1)
+def huggingface_chatbot_response(user_input: str, custom_prompt: str, temperatura: float):
 
     # Inicialización del modelo
     llm = HuggingFaceEndpoint(
@@ -36,36 +32,15 @@ def huggingface_chatbot_response(user_input: str, custom_prompt: str, temperatur
         task="text-generation",
         max_new_tokens=512,
         do_sample=False,
-        # top_k=10,
         top_p=0.7,
-        temperature=temperature,
-        repetition_penalty=1.03,
-        # return_full_text=False,
-        # huggingfacehub_api_token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
+        temperature=temperatura,
+        repetition_penalty=1.03
     )
 
     chat_model = ChatHuggingFace(llm=llm)
-    # chat_model = llm
 
-    prompt = ("""You're a helpful assistant. Answer all questions to the best of your ability.
-              Answer to the user's greeting with a greeting.""" +
-              custom_prompt + """
+    prompt = SYSTEM_PROMPT + custom_prompt + CONVERSATION_HISTORY_PROMPT
 
-# Current conversation:
-# {history}
-# Human: {input}
-# AI Assistant:""")
-
-    system_message = ("""You're a helpful assistant. Answer all questions to the best of your ability.
-              Answer to the user's greeting with a greeting.""" +
-                      custom_prompt)
-
-    messages = [
-        SystemMessage(content=system_message),
-        HumanMessage(content=user_input)
-    ]
-
-    # PROMPT = PromptTemplate(input_variables=["history", "input"], template=prompt)
     system_message_prompt = SystemMessagePromptTemplate.from_template(prompt)
     PROMPT = ChatPromptTemplate.from_messages([
         system_message_prompt,
@@ -73,69 +48,66 @@ def huggingface_chatbot_response(user_input: str, custom_prompt: str, temperatur
         HumanMessage(content=user_input)
     ])
 
-    conversation = ConversationChain(
-        prompt=PROMPT,
-        llm=chat_model,
-        verbose=False,
-        memory=memory
-    )
-    # chat_model._to_chat_prompt(messages)
+    # Cargamos memoria de conversación previamente almacenada con historial de conversación
+    memory = cargar_memoria_conversacion()
 
     try:
-        # result = chat_model.invoke(messages)
+        conversation = ConversationChain(
+            prompt=PROMPT,
+            llm=chat_model,
+            verbose=False,
+            memory=memory
+        )
+    except ValidationError as e:
+        return f'<span style="color:red">Ocurrió un error de validación: {e}</span>'
+
+    try:
         result = conversation.predict(input=user_input)
 
-        # Obtenemos el histórico
-        # print(memory.load_memory_variables({}))
-        # print(conversation.memory.buffer)
-        # print('********************')
-        pickled_str = pickle.dumps(conversation.memory)  # Crea un objeto binario con todo el objeto de la memoria
-        with open('storage/memory.pkl',
-                  'wb') as f:  # wb para indicar que escriba un objeto binario, en este caso en la misma ruta que el script
-            f.write(pickled_str)
-        # print(result)
+        # Persistimos memoria de conversación para poder cargarla en futuras consultas al chat
+        persistir_memoria_conversacion(conversation.memory)
+
     except HfHubHTTPError as e:
-        return f"Ocurrió un error HTTP al intentar acceder al Hub: {e}"
+        return f'<span style="color:red">Ocurrió un error HTTP al intentar acceder al Hub: {e}</span>'
 
     response = result
     return response
 
-def huggingface_agent_chatbot_response(user_input: str, system_message: str, temperature: float):
+def huggingface_agent_base_conocimiento_response(user_input: str, system_message: str, temperatura: float):
     # Inicialización del modelo
     llm = HuggingFaceEndpoint(
-        repo_id="HuggingFaceH4/zephyr-7b-beta",
-        # task="text-generation",
+        repo_id="HuggingFaceH4/starchat2-15b-v0.1",
+        task="text-generation",
         max_new_tokens=512,
         do_sample=False,
-        # top_k=10,
         top_p=0.7,
-        temperature=temperature,
-        repetition_penalty=1.03,
-        # return_full_text=False,
-        huggingfacehub_api_token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
+        temperature=temperatura,
+        repetition_penalty=1.03
     )
-#     # Definir el prompt y el agente
-#
-#     @tool
-#     def chatbot_response(text: str) -> str:
-#         '''Responde preguntas basadas en el modelo OpenAI GPT'''
-#
-    tools = [
-        Tool(
-            name="Chatbot",
-            func=llm,
-            description="You're a helpful conversational ai assistant. Just answer the question only in the same language."
-        ),
-    ]
-    # tools = []
+    chat_model = ChatHuggingFace(llm=llm)
+
+    # memory = ConversationBufferMemory(memory_key="chat_history") #ponemos una denominada clave a la memoria "chat_history"
+    memory = cargar_memoria_conversacion()
+
+    tools = obtener_tools_consulta_base_conocimiento(chat_model)
 
     # Crear el agente
     agent = initialize_agent(
-        tools, llm, agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True, handle_parsing_errors=True
+        tools, llm, agent_type=AgentType.CONVERSATIONAL_REACT_DESCRIPTION, memory=memory, verbose=True, handle_parsing_errors=True
     )
 
     # Ejecutar el agente con la entrada del usuario
-    response = agent.invoke(user_input)
+    try:
+        response = agent.invoke(user_input)
+
+        # Persistimos memoria de conversación para poder cargarla en futuras consultas al chat
+        memory.save_context({"input": user_input}, {"output": response['output']})
+        persistir_memoria_conversacion(memory)
+
+    except HfHubHTTPError as e:
+        return f'<span style="color:red">Ocurrió un error HTTP al intentar acceder al Hub: {e}</span>'
+    except ValueError as e:
+        return f'<span style="color:red">Ocurrió un error al intentar procesar la entrada del usuario: {user_input} {e}</span>'
 
     return response['output']
 
@@ -167,7 +139,8 @@ def huggingface_agent_chatbot_response(user_input: str, system_message: str, tem
     # return response
 
 
-def execute(user_input: str, system_message: str, temperature: float):
-    return huggingface_chatbot_response(user_input, system_message, temperature)
-    # return huggingface_agent_chatbot_response(user_input, system_message, temperature)
-    # return "Respuesta"
+def execute(user_input: str, system_message: str, temperatura: float, usar_base_conocimiento: bool):
+    if usar_base_conocimiento:
+        return huggingface_agent_base_conocimiento_response(user_input, system_message, temperatura)
+    else:
+        return huggingface_chatbot_response(user_input, system_message, temperatura)
