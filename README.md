@@ -7,8 +7,6 @@ Este archivo incluye información sobre:
 
 Para indicaciones sobre el despliegue y ejecución del chatbot, ver el archivo _deployment.md_.
 
-El código completo se encuentra en el siguiente repositorio Git:
-https://github.com/jfsanchezaldeguer/langchain-chatbot
 
 ## Documentación de configuración
 Hay varias opciones de configuración que se pueden ir modificando desde la sidebar de la interfaz de usuario del chatbot:
@@ -56,6 +54,8 @@ Se utiliza una chain con un prompt para guiar al asistente en la conversación.
 
 ### Fichero _utils.py_
 Este fichero incluye:
-- Funciones de apoyo
+- Funciones de apoyo.
 - Funciones que sirven para encapsular accesos a infraestructura, como la gestión de la persistencia de memoria de conversación y la creación y acceso a la base de datos de vectores.
 - Funciones que sirven para encapsular los modelos LLM y de embedding específicos utilizados, de forma que en caso de querer implementar integración con otros modelos, solo haya que modificar estas pequeñas funciones de este fichero, y sea lo más transparente posible para las funciones principales de _chatbot.py_, donde está el flujo principal del funcionamiento del sistema, que se abstrae de los modelos LLM específicos.
+
+El chatbot está preparado para utilizar modelos de OpenAI y de HuggingFace. Si se configuran las variables de entorno de HuggingFace, será el modelo utilizado. En caso contrario, se utilizará el modelo de OpenAI.

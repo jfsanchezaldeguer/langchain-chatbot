@@ -1,12 +1,12 @@
 import pickle
 import os
 from langchain.memory import ConversationBufferMemory, ConversationBufferWindowMemory
-from langchain_community.vectorstores import SKLearnVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import SKLearnVectorStore
-# from langchain_openai import OpenAIEmbeddings
+# from langchain.llms import OpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainExtractor
 from langchain.agents import tool
@@ -20,6 +20,7 @@ load_dotenv()
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 # Configurar la clave API de OpenAI
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+os.environ["OPENAI_MODEL_NAME"] = os.getenv("OPENAI_MODEL_NAME")
 
 SYSTEM_PROMPT = """You're a helpful assistant. Answer all questions to the best of your ability. Answer to the user's greeting with a greeting. """
 CONVERSATION_HISTORY_PROMPT = """
@@ -51,37 +52,48 @@ def limpiar_memoria_conversacion_previa():
 
 
 def inicializacion_modelo_llm(temperatura: float):
-
     # Crear el LLM (Modelo de Lenguaje) usando OpenAI
-    # llm = OpenAI(model="text-davinci-003")  # O usa "gpt-3.5-turbo" o "gpt-4" si tienes acceso
-    # llm = ChatOpenAI(model="gpt-4o-mini")  # O usa "gpt-3.5-turbo" o "gpt-4" si tienes acceso
-
-    llm = HuggingFaceEndpoint(
-        repo_id="HuggingFaceH4/starchat2-15b-v0.1",
-        task="text-generation",
-        max_new_tokens=512,
-        do_sample=False,
-        top_p=0.7,
-        temperature=temperatura,
-        repetition_penalty=1.03
-    )
+    if os.environ["HUGGINGFACEHUB_API_TOKEN"] and os.environ["HUGGINGFACEHUB_REPO_ID"]:
+        llm = HuggingFaceEndpoint(
+            repo_id=os.environ["HUGGINGFACEHUB_REPO_ID"],
+            task="text-generation",
+            max_new_tokens=512,
+            do_sample=False,
+            top_p=0.7,
+            temperature=temperatura,
+            repetition_penalty=1.03
+        )
+    else:
+        # Crear el LLM (Modelo de Lenguaje) usando OpenAI
+        llm = ChatOpenAI(
+            model=os.environ["OPENAI_MODEL_NAME"],
+            temperature=temperatura,
+            max_tokens=None,
+            timeout=None,
+            max_retries=2
+        )
     return llm
 
 
 def inicializacion_chat_model(llm):
-    return ChatHuggingFace(llm=llm)
+    if os.environ["HUGGINGFACEHUB_API_TOKEN"] and os.environ["HUGGINGFACEHUB_REPO_ID"]:
+        return ChatHuggingFace(llm=llm)
+    else:
+        return llm
 
 
 def obtener_funcion_embedding():
-    model_name = "sentence-transformers/all-mpnet-base-v2"
-    model_kwargs = {'device': 'cpu'}
-    encode_kwargs = {'normalize_embeddings': False}
-    return HuggingFaceEmbeddings(
-        model_name=model_name,
-        model_kwargs=model_kwargs,
-        encode_kwargs=encode_kwargs
-    )
-
+    if os.environ["HUGGINGFACEHUB_API_TOKEN"] and os.environ["HUGGINGFACEHUB_REPO_ID"]:
+        model_name = "sentence-transformers/all-mpnet-base-v2"
+        model_kwargs = {'device': 'cpu'}
+        encode_kwargs = {'normalize_embeddings': False}
+        return HuggingFaceEmbeddings(
+            model_name=model_name,
+            model_kwargs=model_kwargs,
+            encode_kwargs=encode_kwargs
+        )
+    else:
+        return OpenAIEmbeddings(openai_api_key=os.environ["OPENAI_API_KEY"])
 
 def inicializar_base_conocimiento_vectorizada():
 

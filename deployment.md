@@ -5,8 +5,12 @@ Este fichero incluye indicaciones para el despliegue y ejecución del chatbot.
 ## Instrucciones de instalación
 
 Hay que configurar las variables de entorno necesarias para las APIs. Para ello hay que crear fichero .env en base a .env.example, y especificar en él las variables de entorno que se vayan a utilizar:
-   - OPENAI_API_KEY
-   - HUGGINGFACEHUB_API_TOKEN
+   - En caso de utilizar OpenAI:
+     - OPENAI_API_KEY
+     - OPENAI_MODEL_NAME
+   - En caso de utilizar HuggingFace:
+     - HUGGINGFACEHUB_API_TOKEN
+     - HUGGINGFACEHUB_REPO_ID
 
 Una vez hecho esto, hay varias formas de instalación y ejecución:
 - Mediante contenedor Docker

@@ -7,8 +7,6 @@ from langchain.prompts import (
     MessagesPlaceholder
 )
 from langchain.agents import load_tools,initialize_agent,AgentType,create_react_agent,AgentExecutor,tool,Tool
-# from langchain.llms import OpenAI
-# from langchain_openai import ChatOpenAI
 from huggingface_hub.utils import HfHubHTTPError
 from utils import (persistir_memoria_conversacion, cargar_memoria_conversacion, obtener_tool_consulta_base_conocimiento,
                    inicializacion_modelo_llm, inicializacion_chat_model, SYSTEM_PROMPT, CONVERSATION_HISTORY_PROMPT)
