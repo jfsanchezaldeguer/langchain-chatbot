@@ -33,7 +33,7 @@ st.sidebar.text_input("Instrucciones", key="system_message", placeholder="Eres u
 # Add a slider to the sidebar:
 add_slider = st.sidebar.slider(
     'Temperatura',
-    0.0, 2.0, (0.1),
+    0.0, 2.0, (0.0),
     step=0.1,
     key="temperature"
 )
