@@ -5,7 +5,6 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import SKLearnVectorStore
-# from langchain.llms import OpenAI
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainExtractor
@@ -18,6 +17,7 @@ load_dotenv()
 
 # Configurar la clave API de HuggingFace
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+os.environ["HUGGINGFACEHUB_REPO_ID"] = os.getenv("HUGGINGFACEHUB_REPO_ID")
 # Configurar la clave API de OpenAI
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_MODEL_NAME"] = os.getenv("OPENAI_MODEL_NAME")

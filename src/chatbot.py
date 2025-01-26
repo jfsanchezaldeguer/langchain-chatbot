@@ -14,7 +14,7 @@ from pydantic import ValidationError
 
 
 # Obtiene la respuesta a partir de la información con la que el modelo fue entrenado, sin acceso a base de conocimiento externa.
-def obtener_respuesta_chatbot_informacion_interna_modelo(user_input: str, custom_prompt: str, temperatura: float):
+def obtener_respuesta_chatbot_informacion_interna_modelo(user_input: str, custom_prompt: str, temperatura: float) -> str:
 
     # Inicialización del modelo
     try:
@@ -65,7 +65,7 @@ def obtener_respuesta_chatbot_informacion_interna_modelo(user_input: str, custom
 
 
 # Obtiene la respuesta mediante un agente que consulta la base de datos vectorizada
-def obtener_respuesta_agente_base_conocimientos_externa(user_input: str, system_message: str, temperatura: float):
+def obtener_respuesta_agente_base_conocimientos_externa(user_input: str, system_message: str, temperatura: float) -> str:
 
     # Inicialización del modelo
     try:
@@ -76,7 +76,6 @@ def obtener_respuesta_agente_base_conocimientos_externa(user_input: str, system_
     except Exception as e:
         return f'<span style="color:red">Ocurrió un error al inicializar el modelo LLM: {e}</span>'
 
-    # memory = ConversationBufferMemory(memory_key="chat_history") #ponemos una denominada clave a la memoria "chat_history"
     memory = cargar_memoria_conversacion()
 
     tools = [obtener_tool_consulta_base_conocimiento(chat_model)]
@@ -107,7 +106,7 @@ def obtener_respuesta_agente_base_conocimientos_externa(user_input: str, system_
     return response['output']
 
 
-def execute(user_input: str, system_message: str, temperatura: float, usar_base_conocimiento: bool):
+def execute(user_input: str, system_message: str, temperatura: float, usar_base_conocimiento: bool) -> str:
     if usar_base_conocimiento:
         return obtener_respuesta_agente_base_conocimientos_externa(user_input, system_message, temperatura)
     else:

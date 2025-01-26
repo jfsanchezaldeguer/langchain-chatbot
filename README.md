@@ -59,3 +59,5 @@ Este fichero incluye:
 - Funciones que sirven para encapsular los modelos LLM y de embedding específicos utilizados, de forma que en caso de querer implementar integración con otros modelos, solo haya que modificar estas pequeñas funciones de este fichero, y sea lo más transparente posible para las funciones principales de _chatbot.py_, donde está el flujo principal del funcionamiento del sistema, que se abstrae de los modelos LLM específicos.
 
 El chatbot está preparado para utilizar modelos de OpenAI y de HuggingFace. Si se configuran las variables de entorno de HuggingFace, será el modelo utilizado. En caso contrario, se utilizará el modelo de OpenAI.
+
+![docs/captura_pantalla_chatbot.png](docs/captura_pantalla_chatbot.png)
