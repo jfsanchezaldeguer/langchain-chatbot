@@ -11,7 +11,10 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiamos el código de la aplicación dentro del contenedor
-COPY . /app/
+COPY ./src /app/src
+COPY ./docs /app/docs
+COPY ./storage /app/storage
+COPY .env /app/
 
 # Exponemos el puerto por donde Streamlit servirá la aplicación (por defecto 8501)
 EXPOSE 8501

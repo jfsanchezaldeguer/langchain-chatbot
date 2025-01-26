@@ -1,23 +1,15 @@
 import streamlit as st
-# from langchain.llms import OpenAI
-# from langchain.agents import initialize_agent, Tool, AgentType
-# from langchain.agents import AgentExecutor
-# from langchain.prompts import PromptTemplate
-# from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
 from chatbot import execute as execute_chatbot
 from utils import limpiar_memoria_conversacion_previa, inicializar_base_conocimiento_vectorizada
-import os
 
 
-# Configurar la clave API de OpenAI
-# os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-
-
+st.set_page_config(
+    page_title="LangChain Chatbot",
+)
 
 # Configuración de la interfaz de Streamlit
 st.title("Chatbot con LangChain")
-st.write("¡Hola! Soy tu chatbot, ¿en qué te puedo ayudar?")
+st.write("¡Hola! Soy tu asistente, ¿en qué te puedo ayudar?")
 
 
 # Preparamos una lista para almacenar los mensajes de la conversación
@@ -40,8 +32,8 @@ add_slider = st.sidebar.slider(
     key="temperature"
 )
 
-st.sidebar.checkbox("Base de conocimiento", value=False, key="checkbox_base_conocimiento",
-                    help="Marcar solo para consultas en la base de conocimiento sobre la historia de España.")
+st.sidebar.checkbox("Integrar base de conocimientos", value=False, key="checkbox_base_conocimiento",
+                    help="Marcar solo para consultas sobre la base de conocimientos sobre la historia de España.")
 
 if st.session_state["checkbox_base_conocimiento"]:
     with st.spinner("Generando base de conocimiento..."):
@@ -70,6 +62,7 @@ def enviar_entrada_texto_usuario():
     # Obtener la respuesta del chatbot
     chatbot_response = execute_chatbot(message, st.session_state.system_message, st.session_state.temperature, st.session_state.checkbox_base_conocimiento)
     st.session_state.messages.append(f'<div style="padding:5pt;width: 75%;">{chatbot_response}</div>')
+
 
 # Interfaz de usuario
 st.text_input("Escribe tu mensaje", value=st.session_state.text_input, on_change=enviar_entrada_texto_usuario, key="user_input",

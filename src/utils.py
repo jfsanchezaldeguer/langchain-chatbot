@@ -10,6 +10,16 @@ from langchain_community.vectorstores import SKLearnVectorStore
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainExtractor
 from langchain.agents import tool
+from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Configurar la clave API de HuggingFace
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+# Configurar la clave API de OpenAI
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
 SYSTEM_PROMPT = """You're a helpful assistant. Answer all questions to the best of your ability. Answer to the user's greeting with a greeting. """
 CONVERSATION_HISTORY_PROMPT = """
@@ -32,12 +42,45 @@ def cargar_memoria_conversacion():
         memoria_cargada = open('storage/memory.pkl', 'rb').read()  # rb para indicar que leemos el objeto binario
         return pickle.loads(memoria_cargada)
     else:
-        return ConversationBufferWindowMemory(return_messages=True, k=1)
+        return ConversationBufferWindowMemory(return_messages=True, k=3)
 
 
 def limpiar_memoria_conversacion_previa():
     if os.path.exists('storage/memory.pkl'):
         os.remove('storage/memory.pkl')
+
+
+def inicializacion_modelo_llm(temperatura: float):
+
+    # Crear el LLM (Modelo de Lenguaje) usando OpenAI
+    # llm = OpenAI(model="text-davinci-003")  # O usa "gpt-3.5-turbo" o "gpt-4" si tienes acceso
+    # llm = ChatOpenAI(model="gpt-4o-mini")  # O usa "gpt-3.5-turbo" o "gpt-4" si tienes acceso
+
+    llm = HuggingFaceEndpoint(
+        repo_id="HuggingFaceH4/starchat2-15b-v0.1",
+        task="text-generation",
+        max_new_tokens=512,
+        do_sample=False,
+        top_p=0.7,
+        temperature=temperatura,
+        repetition_penalty=1.03
+    )
+    return llm
+
+
+def inicializacion_chat_model(llm):
+    return ChatHuggingFace(llm=llm)
+
+
+def obtener_funcion_embedding():
+    model_name = "sentence-transformers/all-mpnet-base-v2"
+    model_kwargs = {'device': 'cpu'}
+    encode_kwargs = {'normalize_embeddings': False}
+    return HuggingFaceEmbeddings(
+        model_name=model_name,
+        model_kwargs=model_kwargs,
+        encode_kwargs=encode_kwargs
+    )
 
 
 def inicializar_base_conocimiento_vectorizada():
@@ -54,14 +97,7 @@ def inicializar_base_conocimiento_vectorizada():
 
         persist_path = "storage/ejemplosk_embedding_db"  # ruta donde se guardará la BBDD vectorizada
 
-        model_name = "sentence-transformers/all-mpnet-base-v2"
-        model_kwargs = {'device': 'cpu'}
-        encode_kwargs = {'normalize_embeddings': False}
-        funcion_embedding = HuggingFaceEmbeddings(
-            model_name=model_name,
-            model_kwargs=model_kwargs,
-            encode_kwargs=encode_kwargs
-        )
+        funcion_embedding = obtener_funcion_embedding()
 
         # Creamos la BBDD de vectores a partir de los documentos y la función embeddings
         vector_store = SKLearnVectorStore.from_documents(
@@ -74,16 +110,9 @@ def inicializar_base_conocimiento_vectorizada():
         vector_store.persist()
 
 
-def obtener_tools_consulta_base_conocimiento(llm):
+def obtener_tool_consulta_base_conocimiento(llm):
 
-    model_name = "sentence-transformers/all-mpnet-base-v2"
-    model_kwargs = {'device': 'cpu'}
-    encode_kwargs = {'normalize_embeddings': False}
-    funcion_embedding = HuggingFaceEmbeddings(
-        model_name=model_name,
-        model_kwargs=model_kwargs,
-        encode_kwargs=encode_kwargs
-    )
+    funcion_embedding = obtener_funcion_embedding()
 
     persist_path = "storage/ejemplosk_embedding_db"
     vector_store_connection = SKLearnVectorStore(embedding=funcion_embedding, persist_path=persist_path,
@@ -101,4 +130,4 @@ def obtener_tools_consulta_base_conocimiento(llm):
         resultado = compressed_docs[0].page_content
         return resultado
 
-    return [consulta_base_conocimiento]
+    return consulta_base_conocimiento

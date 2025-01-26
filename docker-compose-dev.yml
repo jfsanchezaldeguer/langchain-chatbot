@@ -1,11 +1,10 @@
 version: '3'
-volumes:
-  chatbot_storage:
-    driver: local
 services:
   app:
     image: langchain-chatbot
     ports:
       - 8501:8501
     volumes:
-      - storage:/app/storage
+      - ./src:/app/src
+      - ./docs:/app/docs
+      - ./storage:/app/storage
