@@ -5,7 +5,7 @@ Este archivo incluye información sobre:
 - Documentación de uso (interfaz de usuario del chatbot)
 - Explicación de decisiones de diseño (código)
 
-Para indicaciones sobre el despliegue y ejecución del chatbot, ver el archivo _deployment.md_.
+Para indicaciones sobre el despliegue y ejecución del chatbot, ver el archivo [deployment.md](deployment.md).
 
 
 ## Documentación de configuración

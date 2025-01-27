@@ -41,7 +41,7 @@ Una vez hecho esto, hay varias formas de instalación y ejecución:
 ### Ejecución sin contenedores Docker
 1. Crear un entorno virtual de Python:
    ```bash
-    python -m venv
+    python -m venv venv
    ```
 2. Activar el entorno virtual:
     ```bash
